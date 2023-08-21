@@ -23,6 +23,10 @@ try
 
     builder.Services.AddTransient<IEventRepository, EventRepository>();
 
+    builder.Services.AddTransient<ICustomerRepository, CustomerRepository>();
+
+    builder.Services.AddTransient<ITicketCategoryRepository, TicketCategoryRepository>();
+    
     builder.Services.AddTransient<IOrderRepository, OrderRepository>();
 
     /*builder.Services.AddSingleton<ITestService, TestService>();*/
@@ -30,6 +34,16 @@ try
     // NLog: Setup NLog for Dependency injection
     builder.Logging.ClearProviders();
     builder.Host.UseNLog();
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(builder =>
+        {
+            builder.WithOrigins("http://localhost:5174") 
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
+    });
+
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
@@ -45,7 +59,7 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
-
+    app.UseCors();
     app.Run();
 }
 

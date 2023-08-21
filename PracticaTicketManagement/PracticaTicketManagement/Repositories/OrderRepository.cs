@@ -14,7 +14,7 @@ namespace PracticaTicketManagement.Repositories
             _dbContext = new PracticaTicketManagementContext();
         }
 
-        public void AddOrder(Order @order)
+        public void CreateOrder(Order @order)
         {
             _dbContext.Add(order);
             _dbContext.SaveChanges();
@@ -44,7 +44,9 @@ namespace PracticaTicketManagement.Repositories
 
         public async Task<Order> GetByOrderId(int id)
         {
-            var @order = await _dbContext.Orders.Where(e => e.OrderId == id).FirstOrDefaultAsync();
+            var @order = await _dbContext.Orders.Where(e => e.OrderId == id)
+                .Include(o => o.Customer)
+                .Include(o => o.TicketCategory).FirstOrDefaultAsync();
             if (@order == null)
             {
 
@@ -53,11 +55,11 @@ namespace PracticaTicketManagement.Repositories
             return @order;
         }
 
-        public void UpdateOrder(Order @order)
+        public async Task UpdateOrder(Order @order)
         {
 
             _dbContext.Entry(@order).State = EntityState.Modified;
-            _dbContext.SaveChanges();
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

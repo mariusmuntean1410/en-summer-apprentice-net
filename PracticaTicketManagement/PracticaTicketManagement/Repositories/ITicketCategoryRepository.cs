@@ -2,8 +2,8 @@
 
 namespace PracticaTicketManagement.Repositories
 {
-    public interface ICustomerRepository
+    public interface ITicketCategoryRepository
     {
-      /*  public Customer GetById(int id);*/
+        Task<TicketCategory> GetByOrderId(long id);
     }
 }

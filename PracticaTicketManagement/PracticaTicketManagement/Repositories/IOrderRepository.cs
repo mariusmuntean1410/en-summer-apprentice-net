@@ -8,9 +8,9 @@ namespace PracticaTicketManagement.Repositories
 
        Task<Order> GetByOrderId(int id);
 
-        void AddOrder(Order @order);
+        void CreateOrder(Order @order);
 
-        void UpdateOrder(Order @order);
+        Task UpdateOrder(Order @order);
 
         void DeleteOrder(Order @order);
     }

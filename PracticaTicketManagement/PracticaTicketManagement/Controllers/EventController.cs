@@ -5,12 +5,13 @@ using PracticaTicketManagement.Models;
 using PracticaTicketManagement.Models.Dto;
 using PracticaTicketManagement.Repositories;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Cors;
 
 namespace PracticaTicketManagement.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
+    [EnableCors]
     public class EventController : ControllerBase
     {
         private readonly IEventRepository _eventRepository;
@@ -44,8 +45,7 @@ namespace PracticaTicketManagement.Controllers
         public async  Task<ActionResult<EventDto>> GetById(int id)
         {
 
-            try
-            {
+            
                 var @event =await _eventRepository.GetById(id);
 
                 if (@event == null)
@@ -58,12 +58,8 @@ namespace PracticaTicketManagement.Controllers
 
                 return Ok(eventDto);
             }
-            catch (Exception ex)
-            { 
-                _logger.LogError(ex, ex.Message);
-                return BadRequest(ex.Message);
-            }
-        }
+        
+        
 
 
         [HttpPatch]

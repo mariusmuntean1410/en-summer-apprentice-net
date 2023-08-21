@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -6,24 +7,30 @@ using PracticaTicketManagement.Models;
 using PracticaTicketManagement.Models.Dto;
 using PracticaTicketManagement.Repositories;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace PracticaTicketManagement.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
+    [EnableCors]
     public class OrderController : ControllerBase
     {
         private readonly IOrderRepository _orderRepository;
+         private readonly ITicketCategoryRepository _ticketCategoryRepository;
+      
         private readonly IMapper _mapper;
-        private readonly ILogger _logger;
+     /*   private readonly ILogger _logger;*/
 
-        public OrderController(IOrderRepository orderRepository, IMapper mapper, ILogger<EventController> logger)
+        public OrderController(IOrderRepository orderRepository, IMapper mapper/*, ILogger<EventController> logger ,ICustomerRepository customerRepository*/, ITicketCategoryRepository ticketCategoryRepository)
         {
             _orderRepository = orderRepository;
             _mapper = mapper;
-            _logger = logger;
+          /*  _logger = logger;
+            _customerRepository = customerRepository;*/
+            _ticketCategoryRepository = ticketCategoryRepository;
         }
-        
+
         [HttpGet()]
         public ActionResult<List<OrderDto>> GetAll()
         {
@@ -33,7 +40,7 @@ namespace PracticaTicketManagement.Controllers
 
             var dtoOrders = orders.Select(o => _mapper.Map<OrderDto>(o)).ToList();
 
-           
+
 
             return Ok(dtoOrders);
         }
@@ -41,8 +48,7 @@ namespace PracticaTicketManagement.Controllers
         [HttpGet]
         public async Task<ActionResult<OrderDto>> GetByOrderId(int id)
         {
-            try
-            {
+            
                 var @order = await _orderRepository.GetByOrderId(id);
 
                 if (@order == null)
@@ -57,31 +63,40 @@ namespace PracticaTicketManagement.Controllers
 
                 return Ok(dtoOrder);
             }
-            catch (Exception ex) {
 
-                _logger.LogError(ex, ex.Message);
-                return BadRequest(ex.Message);
-            }
-        }
+
 
         [HttpPatch]
         public async Task<ActionResult<OrderPatchDto>> Patch(OrderPatchDto orderPatch)
         {
-            if (orderPatch == null) throw new ArgumentNullException(nameof(orderPatch));
             var orderEntity = await _orderRepository.GetByOrderId(orderPatch.OrderId);
-         
-            if (orderPatch.NumberOfTickets != null) orderEntity.NumberOfTickets = orderPatch.NumberOfTickets;
-            if (orderPatch.CustomerId != null) orderEntity.CustomerId = orderPatch.CustomerId;
+            var ticketCategoryEntity = await _ticketCategoryRepository.GetByOrderId(orderPatch.TicketCategoryId);
+
+            if (orderEntity == null)
+            {
+                return NotFound();
+            }
+
+            orderEntity.TotalPrice = orderPatch.NumberOfTickets * ticketCategoryEntity.Price;
             _mapper.Map(orderPatch, orderEntity);
-            _orderRepository.UpdateOrder(orderEntity);
-            return Ok(orderEntity);
+            await _orderRepository.UpdateOrder(orderEntity);
+
+            var orderResponse = _mapper.Map<OrderDto>(orderEntity);
+
+            return new ContentResult()
+            {
+                Content = JsonSerializer.Serialize(orderResponse),
+                ContentType = "application/json",
+                StatusCode = StatusCodes.Status200OK
+            };
         }
 
-        [HttpDelete]
+
+        [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)
         {
-           
-                var orderEntity = await _orderRepository.GetByOrderId(id);
+
+            var orderEntity = await _orderRepository.GetByOrderId(id);
 
             if (orderEntity == null)
             {
@@ -89,12 +104,45 @@ namespace PracticaTicketManagement.Controllers
             }
 
             _orderRepository.DeleteOrder(orderEntity);
-                return NoContent();
-            }
-            
-                
+            return NoContent();
         }
 
 
-    }
 
+/*
+        [HttpPost]
+        public async Task<ActionResult> CreateOrder(OrderCreateDto newOrder)
+        {
+
+            var customer = await _customerRepository.GetById(1);
+
+            if (customer == null)
+            {
+                return BadRequest("Customer not found.");
+            }
+
+
+            var numberOfTickets = newOrder.NumberOfTickets;
+            var date = DateTime.Now;
+            var totalPrice = numberOfTickets * ticketCategory.Price;
+
+
+            var @order = new Order
+            {
+                CustomerId = customer.CustomerId,
+                TicketCategoryId = ticketCategory.TicketCategoryId,
+                OrderedAt = date,
+                NumberOfTickets = numberOfTickets,
+                TotalPrice = totalPrice
+            };
+
+
+            @order = await _orderRepository.Add(Order);
+            if (@order == null) return BadRequest("Order not created");
+            return _mapper.Map<OrderDto>(@order);
+
+
+
+        }*/
+    }
+}
